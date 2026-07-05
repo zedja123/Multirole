@@ -360,7 +360,7 @@ std::unique_ptr<YGOPro::STOCMsg> Context::CheckDeck(const YGOPro::Deck& deck) co
 		case ALLOWED_CARDS_OCG_TCG_CUSTOM:
 			return (scope & (~SCOPE_OCG_TCG_CUSTOM)) != 0U;
 		case ALLOWED_CARDS_PRERELEASE_CUSTOM:
-			return (scope & (~SCOPE_PRERELASE_CUSTOM)) != 0U;
+			return (scope & (~SCOPE_PRERELEASE_CUSTOM)) != 0U;
 		default:
 			return false;
 		}
