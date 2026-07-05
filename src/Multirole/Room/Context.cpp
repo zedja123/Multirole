@@ -353,6 +353,14 @@ std::unique_ptr<YGOPro::STOCMsg> Context::CheckDeck(const YGOPro::Deck& deck) co
 			return scope > SCOPE_OCG_TCG;
 		case ALLOWED_CARDS_WITH_PRERELEASE:
 			return (scope & (~SCOPE_OFFICIAL)) != 0U;
+		case ALLOWED_CARDS_OCG_CUSTOM:
+			return (scope & (~SCOPE_OCG_CUSTOM)) != 0U;
+		case ALLOWED_CARDS_TCG_CUSTOM:
+			return (scope & (~SCOPE_TCG_CUSTOM)) != 0U;
+		case ALLOWED_CARDS_OCG_TCG_CUSTOM:
+			return (scope & (~SCOPE_OCG_TCG_CUSTOM)) != 0U;
+		case ALLOWED_CARDS_PRERELEASE_CUSTOM:
+			return (scope & (~SCOPE_PRERELASE_CUSTOM)) != 0U;
 		default:
 			return false;
 		}
@@ -372,6 +380,26 @@ std::unique_ptr<YGOPro::STOCMsg> Context::CheckDeck(const YGOPro::Deck& deck) co
 	auto CheckTCG = [](uint32_t scope, uint8_t allowed) constexpr -> bool
 	{
 		return allowed == ALLOWED_CARDS_TCG_ONLY && ((scope & SCOPE_TCG) == 0U);
+	};
+	//	true if only ocg+custom are allowed and scope is not ocg+custom.
+	auto CheckOCG_CUSTOM = [](uint32_t scope, uint8_t allowed) constexpr -> bool
+	{
+		return allowed == ALLOWED_CARDS_OCG_CUSTOM && ((scope & SCOPE_OCG_CUSTOM) == 0U);
+	};
+	//	true if only tcg+custom are allowed and scope is not tcg+custom.
+	auto CheckTCG_CUSTOM = [](uint32_t scope, uint8_t allowed) constexpr -> bool
+	{
+		return allowed == ALLOWED_CARDS_TCG_CUSTOM && ((scope & SCOPE_TCG_CUSTOM) == 0U);
+	};
+	//	true if only ocg+tcg+custom are allowed and scope is not ocg+tcg+custom.
+	auto CheckOCG_TCG_CUSTOM = [](uint32_t scope, uint8_t allowed) constexpr -> bool
+	{
+		return allowed == ALLOWED_CARDS_OCG_TCG_CUSTOM && ((scope & SCOPE_OCG_TCG_CUSTOM) == 0U);
+	};
+	//	true if only prerelease+custom are allowed and scope is not prerelease+custom.
+	auto CheckPrerelease_CUSTOM = [](uint32_t scope, uint8_t allowed) constexpr -> bool
+	{
+		return allowed == ALLOWED_CARDS_PRERELEASE_CUSTOM && ((scope & SCOPE_PRERELEASE_CUSTOM) == 0U);
 	};
 	//	true if card code and its count is banlisted.
 	auto CheckBanlist = [&](uint32_t code, std::size_t count, const Banlist& bl) -> bool
@@ -404,6 +432,14 @@ std::unique_ptr<YGOPro::STOCMsg> Context::CheckDeck(const YGOPro::Deck& deck) co
 		if(CheckUnofficial(ced.scope, hostInfo.allowed))
 			return MakeErrorPtr(CARD_UNOFFICIAL, code);
 		if(CheckPrelease(ced.scope, hostInfo.allowed))
+			return MakeErrorPtr(CARD_UNOFFICIAL, code);
+		if(CheckOCG_CUSTOM(ced.scope, hostInfo.allowed))
+			return MakeErrorPtr(CARD_TCG_ONLY, code);
+		if(CheckTCG_CUSTOM(ced.scope, hostInfo.allowed))
+			return MakeErrorPtr(CARD_OCG_ONLY, code);
+		if(CheckOCG_TCG_CUSTOM(ced.scope, hostInfo.allowed))
+			return MakeErrorPtr(CARD_UNOFFICIAL, code);
+		if(CheckPrerelease_CUSTOM(ced.scope, hostInfo.allowed))
 			return MakeErrorPtr(CARD_UNOFFICIAL, code);
 		if(CheckOCG(ced.scope, hostInfo.allowed))
 			return MakeErrorPtr(CARD_TCG_ONLY, code);
