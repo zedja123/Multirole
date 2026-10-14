@@ -10,6 +10,7 @@
 #include "../Room/Client.hpp"
 #include "../Room/Instance.hpp"
 #include "../Service/BanlistProvider.hpp"
+#include "../YGOPro/Banlist.hpp"
 #include "../YGOPro/Config.hpp"
 #include "../YGOPro/CTOSMsg.hpp"
 #include "../YGOPro/StringUtils.hpp"
@@ -213,6 +214,19 @@ private:
 			FixLimit(hi.limits.main);
 			FixLimit(hi.limits.extra);
 			FixLimit(hi.limits.side);
+			// Genesys rule (MASQPro): original field layout without Pendulum
+			// Zones or Extra Monster Zones, and no Link or Pendulum Monsters,
+			// whatever rule the host picked.
+			if(info.banlist != nullptr && info.banlist->IsGenesys())
+			{
+				constexpr uint32_t DUEL_PZONE = 0x800;
+				constexpr uint32_t DUEL_SEPARATE_PZONE = 0x1000;
+				constexpr uint32_t DUEL_EMZONE = 0x2000;
+				constexpr int32_t TYPE_PENDULUM = 0x1000000;
+				constexpr int32_t TYPE_LINK = 0x4000000;
+				hi.duelFlagsLow &= ~(DUEL_PZONE | DUEL_SEPARATE_PZONE | DUEL_EMZONE);
+				hi.forb |= TYPE_PENDULUM | TYPE_LINK;
+			}
 			// Remove Relay flag if its 1v1.
 			constexpr uint32_t DUEL_RELAY = 0x80;
 			bool isRelay = (hi.duelFlagsLow & DUEL_RELAY) != 0U;
