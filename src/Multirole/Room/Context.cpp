@@ -420,6 +420,43 @@ std::unique_ptr<YGOPro::STOCMsg> Context::CheckDeck(const YGOPro::Deck& deck) co
 		if((banlist != nullptr) && CheckBanlist(code, totalCount, *banlist))
 			return MakeErrorPtr(CARD_BANLISTED, code);
 	}
+	// Genesys format: no Link or Pendulum Monsters, and the points of the
+	// Main, Extra and Side Deck combined must not exceed the list's cap.
+	if(banlist != nullptr && banlist->IsGenesys())
+	{
+		for(const auto code : codes)
+		{
+			const auto type = cdb->DataFromCode(code).type;
+			if((type & TYPE_MONSTER) != 0U && (type & (TYPE_LINK | TYPE_PENDULUM)) != 0U)
+				return MakeErrorPtr(CARD_FORBIDDEN_TYPE, 0);
+		}
+		const auto& points = banlist->Points();
+		auto PointsOf = [&](uint32_t code) -> uint32_t
+		{
+			if(auto it = points.find(code); it != points.end())
+				return it->second;
+			// Points follow alternate artworks only, not "always treated as"
+			// cards, which are different cards with their own point value.
+			const uint32_t alias = cdb->DataFromCode(code).alias;
+			if(alias == 0U)
+				return 0U;
+			constexpr uint32_t ID_MAX_DISTANCE_HALF = 10U;
+			const bool inArtworkRange = (alias - code < ID_MAX_DISTANCE_HALF) ||
+			                            (code - alias < ID_MAX_DISTANCE_HALF);
+			if(!inArtworkRange)
+				return 0U;
+			if(auto it = points.find(alias); it != points.end())
+				return it->second;
+			return 0U;
+		};
+		std::size_t total = 0U;
+		for(const auto* pile : {&deck.Main(), &deck.Extra(), &deck.Side()})
+			for(const auto code : *pile)
+				total += PointsOf(code);
+		if(total > banlist->GenesysCap())
+			return std::make_unique<STOCMsg>(MakeDeckError(
+				GENESYS_POINTS, total, 0U, banlist->GenesysCap()));
+	}
 	return nullptr;
 }
 

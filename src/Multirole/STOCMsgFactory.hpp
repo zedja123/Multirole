@@ -33,6 +33,8 @@ enum DeckOrCard : uint8_t
 	CARD_TCG_PRE          = 0xE,
 	CARD_OCG_PRE          = 0xF,	
 	CARD_FORBIDDEN_TYPE   = 0x9,
+	// MASQPro: Genesys point cap exceeded (count: total points, max: cap).
+	GENESYS_POINTS        = 0x10,
 };
 
 } // namespace Error
