@@ -42,10 +42,23 @@ Once you have all necessary tools and dependencies, compiling should be as simpl
 ```sh
 # For Linux and other POSIX-oriented OS
 meson setup build && meson compile -C build
-# For Windows
-meson setup build --vsenv --backend=vs
-meson compile -C build # Alternatively, open the generated solution and build it
 ```
+
+On Debian/Ubuntu the dependencies are:
+
+```sh
+sudo apt-get install --no-install-recommends libfmt-dev libgit2-dev libsqlite3-dev libssl-dev libboost-all-dev ninja-build meson
+```
+
+On Windows, build with MSYS2 (the same setup as the `x86-windows` workflow). From an MSYS2 **MINGW32** shell:
+
+```sh
+pacman -S --needed mingw-w64-i686-toolchain mingw-w64-i686-libgit2-winhttp mingw-w64-i686-fmt mingw-w64-i686-boost mingw-w64-i686-sqlite3 mingw-w64-i686-openssl mingw-w64-i686-meson pkgconf
+LDFLAGS="-static-libstdc++ -static-libgcc -static" meson setup build -Dbuildtype=release
+meson compile -C build
+```
+
+A Visual Studio build (`meson setup build --vsenv --backend=vs`) is not set up: meson cannot find the dependencies there unless you provide them yourself (for example through vcpkg and pkg-config).
 
 You should take a look at the github workflow files to learn how to setup the development environment for your platform. You can also use the Dockerfile, which should handle everything related to building for you.
 
