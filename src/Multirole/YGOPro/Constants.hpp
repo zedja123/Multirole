@@ -109,6 +109,21 @@
 #define MSG_PLAYER_HINT          165
 #define MSG_MATCH_KILL           170
 // #define MSG_CUSTOM_MSG   180
+// MASQPro core: typed summon messages (see MASQPro's ocgcore/ocgapi_constants.h).
+// *SUMMONING carry a card code and location like MSG_SPSUMMONING;
+// *SUMMONED carry no payload, like MSG_SPSUMMONED.
+#define MSG_RITUALSUMMONING      200
+#define MSG_FUSIONSUMMONING      201
+#define MSG_SYNCHROSUMMONING     202
+#define MSG_XYZSUMMONING         203
+#define MSG_LINKSUMMONING        204
+#define MSG_PENDULUMSUMMONING    205
+#define MSG_RITUALSUMMONED       206
+#define MSG_FUSIONSUMMONED       207
+#define MSG_SYNCHROSUMMONED      208
+#define MSG_XYZSUMMONED          209
+#define MSG_LINKSUMMONED         210
+#define MSG_PENDULUMSUMMONED     211
 
 #define POS_FACEUP_ATTACK    0x1
 #define POS_FACEDOWN_ATTACK  0x2

@@ -11,11 +11,13 @@ enum AllowedCards
 	ALLOWED_CARDS_TCG_ONLY,
 	ALLOWED_CARDS_OCG_TCG,
 	ALLOWED_CARDS_WITH_PRERELEASE,
+	ALLOWED_CARDS_ANY,
+	// MASQPro additions. Values are sent by the client and must stay in sync
+	// with DuelAllowedCards in MASQPro's gframe/deck_manager.h.
 	ALLOWED_CARDS_OCG_CUSTOM,
 	ALLOWED_CARDS_TCG_CUSTOM,
 	ALLOWED_CARDS_OCG_TCG_CUSTOM,
 	ALLOWED_CARDS_PRERELEASE_CUSTOM,
-	ALLOWED_CARDS_ANY
 };
 
 enum ExtraRule

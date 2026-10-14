@@ -255,6 +255,12 @@ MsgDistType GetMessageDistributionType(const Msg& msg) noexcept
 	case MSG_SET:
 	case MSG_MOVE:
 	case MSG_SPSUMMONING:
+	case MSG_RITUALSUMMONING:
+	case MSG_FUSIONSUMMONING:
+	case MSG_SYNCHROSUMMONING:
+	case MSG_XYZSUMMONING:
+	case MSG_LINKSUMMONING:
+	case MSG_PENDULUMSUMMONING:
 	case MSG_DRAW:
 	case MSG_TAG_SWAP:
 	{
@@ -352,6 +358,12 @@ Msg StripMessageForTeam(uint8_t team, Msg msg) noexcept
 		break;
 	}
 	case MSG_SPSUMMONING:
+	case MSG_RITUALSUMMONING:
+	case MSG_FUSIONSUMMONING:
+	case MSG_SYNCHROSUMMONING:
+	case MSG_XYZSUMMONING:
+	case MSG_LINKSUMMONING:
+	case MSG_PENDULUMSUMMONING:
 	{
 		ptr += 4U; // Card code
 		const auto current = Read<LocInfo>(ptr);
@@ -515,6 +527,12 @@ std::vector<QueryRequest> GetPostDistQueryRequests(const Msg& msg) noexcept
 	}
 	case MSG_SUMMONED:
 	case MSG_SPSUMMONED:
+	case MSG_RITUALSUMMONED:
+	case MSG_FUSIONSUMMONED:
+	case MSG_SYNCHROSUMMONED:
+	case MSG_XYZSUMMONED:
+	case MSG_LINKSUMMONED:
+	case MSG_PENDULUMSUMMONED:
 	case MSG_FLIPSUMMONED:
 	{
 		AddRefreshAllMZones(qreqs);
