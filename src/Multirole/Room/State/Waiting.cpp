@@ -235,7 +235,7 @@ StateOpt Context::operator()(State::Waiting& /*unused*/, const Event::UpdateDeck
 {
 	if(e.client.Position() == Client::POSITION_SPECTATOR)
 		return std::nullopt;
-	e.client.SetOriginalDeck(LoadDeck(e.main, e.side));
+	e.client.SetOriginalDeck(LoadDeck(e.main, e.side, e.master));
 	return std::nullopt;
 }
 

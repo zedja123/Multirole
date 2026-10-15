@@ -187,9 +187,16 @@ private:
 	// Creates a YGOPro::Deck from the given vectors, making sure
 	// that the deck is only composed of non-zero card codes, also,
 	// sets its internal error to whatever was the lastest unknown card.
+	// The Domain Deck Master (0 if none) is stored as is, CheckDeck
+	// validates it.
 	std::unique_ptr<YGOPro::Deck> LoadDeck(
 		const std::vector<uint32_t>& main,
-		const std::vector<uint32_t>& side) const noexcept;
+		const std::vector<uint32_t>& side,
+		uint32_t master) const noexcept;
+
+	// Whether the room plays the Domain format (MASQPro), which follows the
+	// banlist only (see Endpoint/RoomHosting.cpp).
+	bool IsDomain() const noexcept;
 
 	// Check if a given deck is valid on the current room options.
 	std::unique_ptr<YGOPro::STOCMsg> CheckDeck(const YGOPro::Deck& deck) const noexcept;

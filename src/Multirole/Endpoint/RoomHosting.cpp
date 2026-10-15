@@ -227,6 +227,39 @@ private:
 				hi.duelFlagsLow &= ~(DUEL_PZONE | DUEL_SEPARATE_PZONE | DUEL_EMZONE);
 				hi.forb |= TYPE_PENDULUM | TYPE_LINK;
 			}
+			// Domain format (MASQPro) follows the banlist only: a Domain list
+			// forces the Domain rule (Master Rule 5 with the Deck Master Zone,
+			// 1 vs 1, its deck sizes, no extra rules), any other list or no
+			// list clears it.
+			{
+				constexpr uint64_t DUEL_MODE_MR5 = 0x2E800U;
+				constexpr uint64_t DUEL_TCG_SEGOC_NONPUBLIC = 0x100000000U;
+				constexpr uint64_t DUEL_DOMAIN = 0x2000000000U;
+				constexpr uint64_t DUEL_MODE_DOMAIN = DUEL_MODE_MR5 | DUEL_DOMAIN;
+				constexpr int32_t DUEL_MODE_DOMAIN_FORB = 0;
+				constexpr auto High = [](uint64_t flags) constexpr
+				{
+					return static_cast<uint32_t>(flags >> 32U);
+				};
+				if(info.banlist != nullptr && info.banlist->IsDomain())
+				{
+					// Only the TCG chain building option is kept.
+					const uint32_t tcg = hi.duelFlagsHigh & High(DUEL_TCG_SEGOC_NONPUBLIC);
+					hi.duelFlagsLow = static_cast<uint32_t>(DUEL_MODE_DOMAIN);
+					hi.duelFlagsHigh = High(DUEL_MODE_DOMAIN) | tcg;
+					hi.forb = DUEL_MODE_DOMAIN_FORB;
+					hi.t0Count = 1;
+					hi.t1Count = 1;
+					hi.extraRules = 0U;
+					hi.limits.main = {60U, 60U};
+					hi.limits.extra = {0U, 15U};
+					hi.limits.side = {0U, 0U};
+				}
+				else
+				{
+					hi.duelFlagsHigh &= ~High(DUEL_DOMAIN);
+				}
+			}
 			// Remove Relay flag if its 1v1.
 			constexpr uint32_t DUEL_RELAY = 0x80;
 			bool isRelay = (hi.duelFlagsLow & DUEL_RELAY) != 0U;

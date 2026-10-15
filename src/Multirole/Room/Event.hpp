@@ -98,6 +98,7 @@ struct UpdateDeck
 	Client& client;
 	const std::vector<uint32_t>& main;
 	const std::vector<uint32_t>& side;
+	uint32_t master; // Domain Deck Master (MASQPro), 0 if none was sent.
 };
 
 } // namespace Event

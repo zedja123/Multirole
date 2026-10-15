@@ -162,11 +162,27 @@ StateOpt Context::operator()(State::Dueling& s) noexcept
 				nci.code = code;
 				s.core->AddCard(s.duelPtr, nci);
 			}
+			// Domain format: the Deck Master goes into the Deck Master Zone
+			// right after its duelist's Extra Deck (the replay readers
+			// re-create the duel in this same order).
+			CodeVector master;
+			if(IsDomain() && deck.Master() != 0U)
+			{
+				OCG_NewCardInfo dmci = nci;
+				dmci.duelist = 0U;
+				dmci.code = deck.Master();
+				dmci.loc = LOCATION_DECK_MASTER;
+				dmci.seq = 0U;
+				dmci.pos = POS_FACEDOWN;
+				s.core->AddCard(s.duelPtr, dmci);
+				master.push_back(dmci.code);
+			}
 			s.replay->AddDuelist(nci.team, nci.duelist,
 			{
 				duelists[{t, nci.duelist}]->Name(),
 				std::move(finalMainDeck),
-				deck.Extra()
+				deck.Extra(),
+				std::move(master)
 			});
 		}
 		s.core->Start(s.duelPtr);

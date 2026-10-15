@@ -35,6 +35,11 @@ enum DeckOrCard : uint8_t
 	CARD_FORBIDDEN_TYPE   = 0x9,
 	// MASQPro: Genesys point cap exceeded (count: total points, max: cap).
 	GENESYS_POINTS        = 0x10,
+	// MASQPro Domain format (code: the card).
+	DOMAIN_DECK_MASTER    = 0x11, // Missing or invalid Deck Master (code or 0).
+	DOMAIN_OUT_OF_DOMAIN  = 0x12, // Card outside the Deck Master's domain.
+	DOMAIN_SINGLETON      = 0x13, // Second copy of a card.
+	DOMAIN_FORBIDDEN_DM   = 0x14, // Card forbidden as Deck Master.
 };
 
 } // namespace Error

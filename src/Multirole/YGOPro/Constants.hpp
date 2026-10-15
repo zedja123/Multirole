@@ -13,6 +13,9 @@
 #define LOCATION_FZONE   0x100
 #define LOCATION_PZONE   0x200
 #define LOCATION_ALL     0x3FF
+// MASQPro Domain: only valid as OCG_NewCardInfo.loc, loads a player's Deck
+// Master into the Deck Master Zone (see MASQPro's ocgcore/ocgapi_constants.h).
+#define LOCATION_DECK_MASTER 0x40000000
 
 #define MSG_RETRY                1
 #define MSG_HINT                 2

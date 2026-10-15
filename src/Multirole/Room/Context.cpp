@@ -1,5 +1,6 @@
 #include "Context.hpp"
 
+#include "DeckCheck.hpp"
 #include "../I18N.hpp"
 #include "../STOCMsgFactory.hpp"
 #include "../Service/DataProvider.hpp"
@@ -166,7 +167,8 @@ void Context::MakeAndSendChat(Client& client, std::string_view msg) noexcept
 
 std::unique_ptr<YGOPro::Deck> Context::LoadDeck(
 	const std::vector<uint32_t>& main,
-	const std::vector<uint32_t>& side) const noexcept
+	const std::vector<uint32_t>& side,
+	uint32_t master) const noexcept
 {
 	const uint64_t DUEL_EXTRA_DECK_RITUAL = 0x800000000ULL;
 	const uint64_t duelFlags = YGOPro::HostInfo::OrDuelFlags(hostInfo.duelFlagsHigh, hostInfo.duelFlagsLow);
@@ -219,7 +221,13 @@ std::unique_ptr<YGOPro::Deck> Context::LoadDeck(
 		std::move(m),
 		std::move(e),
 		std::move(s),
-		err);
+		err,
+		master);
+}
+
+bool Context::IsDomain() const noexcept
+{
+	return banlist != nullptr && banlist->IsDomain();
 }
 
 std::unique_ptr<YGOPro::STOCMsg> Context::CheckDeck(const YGOPro::Deck& deck) const noexcept
@@ -236,6 +244,18 @@ std::unique_ptr<YGOPro::STOCMsg> Context::CheckDeck(const YGOPro::Deck& deck) co
 		return std::make_unique<STOCMsg>(
 			MakeDeckError(type, got, lim.min, lim.max));
 	};
+	auto MakeFailurePtr = [](const DeckCheck::Failure& f)
+	{
+		return std::make_unique<STOCMsg>(MakeDeckError(f.type, f.code));
+	};
+	// Domain format: the Deck Master is checked first, even when the deck
+	// content is not checked, as it is added to the duel as is.
+	if(IsDomain())
+	{
+		const bool checkContent = hostInfo.dontCheckDeckContent == 0U;
+		if(const auto f = DeckCheck::CheckDeckMaster(deck, *banlist, *cdb, checkContent); f)
+			return MakeFailurePtr(*f);
+	}
 	// Check if the deck had any error while loading.
 	if(const auto error = deck.Error(); error != 0U)
 		return MakeErrorPtr(CARD_UNKNOWN, error);
@@ -268,6 +288,14 @@ std::unique_ptr<YGOPro::STOCMsg> Context::CheckDeck(const YGOPro::Deck& deck) co
 	// If only the deck sizes have to be checked, stop here.
 	if(hostInfo.dontCheckDeckContent != 0U)
 		return nullptr;
+
+	// Domain format: singleton and domain rules instead of the usual ones.
+	if(IsDomain())
+	{
+		if(const auto f = DeckCheck::CheckContent(deck, *banlist, *cdb, hostInfo.forb, hostInfo.allowed); f)
+			return MakeFailurePtr(*f);
+		return nullptr;
+	}
 
 	// Check if the deck had any error while loading.
 	if(const auto error = deck.Error(); error != 0U)
@@ -342,45 +370,6 @@ std::unique_ptr<YGOPro::STOCMsg> Context::CheckDeck(const YGOPro::Deck& deck) co
 		return aliased[code];
 	};
 	// Custom predicates...
-	//	true if card scope is unnofficial and not allowed.
-	auto CheckUnofficial = [](uint32_t scope, uint8_t allowed) constexpr -> bool
-	{
-		switch(allowed)
-		{
-		case ALLOWED_CARDS_OCG_ONLY:
-		case ALLOWED_CARDS_TCG_ONLY:
-		case ALLOWED_CARDS_OCG_TCG:
-			return scope > SCOPE_OCG_TCG;
-		case ALLOWED_CARDS_WITH_PRERELEASE:
-			return (scope & (~SCOPE_OFFICIAL)) != 0U;
-		case ALLOWED_CARDS_OCG_CUSTOM:
-			return (scope & SCOPE_OCG_CUSTOM) == 0U;
-		case ALLOWED_CARDS_TCG_CUSTOM:
-			return (scope & SCOPE_TCG_CUSTOM) == 0U;
-		case ALLOWED_CARDS_OCG_TCG_CUSTOM:
-			return (scope & SCOPE_OCG_TCG_CUSTOM) == 0U;
-		case ALLOWED_CARDS_PRERELEASE_CUSTOM:
-			return (scope & SCOPE_PRERELEASE_CUSTOM) == 0U;
-		default:
-			return false;
-		}
-	};
-	//	true if card scope is prerelease and they are not allowed.
-	auto CheckPrelease = [](uint32_t scope, uint8_t allowed) constexpr -> bool
-	{
-		return allowed == ALLOWED_CARDS_WITH_PRERELEASE &&
-		       ((scope & SCOPE_OFFICIAL) == 0U);
-	};
-	//	true if only ocg are allowed and scope is not ocg (its tcg).
-	auto CheckOCG = [](uint32_t scope, uint8_t allowed) constexpr -> bool
-	{
-		return allowed == ALLOWED_CARDS_OCG_ONLY && ((scope & SCOPE_OCG) == 0U);
-	};
-	//	true if only tcg are allowed and scope is not tcg (its ocg).
-	auto CheckTCG = [](uint32_t scope, uint8_t allowed) constexpr -> bool
-	{
-		return allowed == ALLOWED_CARDS_TCG_ONLY && ((scope & SCOPE_TCG) == 0U);
-	};
 	//	true if card code and its count is banlisted.
 	auto CheckBanlist = [&](uint32_t code, std::size_t count, const Banlist& bl) -> bool
 	{
@@ -409,14 +398,8 @@ std::unique_ptr<YGOPro::STOCMsg> Context::CheckDeck(const YGOPro::Deck& deck) co
 		if(totalCount > 3U)
 			return MakeErrorPtr(CARD_MORE_THAN_3, code);
 		const auto& ced = cdb->ExtraFromCode(code);
-		if(CheckUnofficial(ced.scope, hostInfo.allowed))
-			return MakeErrorPtr(CARD_UNOFFICIAL, code);
-		if(CheckPrelease(ced.scope, hostInfo.allowed))
-			return MakeErrorPtr(CARD_UNOFFICIAL, code);
-		if(CheckOCG(ced.scope, hostInfo.allowed))
-			return MakeErrorPtr(CARD_TCG_ONLY, code);
-		if(CheckTCG(ced.scope, hostInfo.allowed))
-			return MakeErrorPtr(CARD_OCG_ONLY, code);
+		if(const auto error = DeckCheck::ScopeError(ced.scope, hostInfo.allowed); error)
+			return MakeErrorPtr(*error, code);
 		if((banlist != nullptr) && CheckBanlist(code, totalCount, *banlist))
 			return MakeErrorPtr(CARD_BANLISTED, code);
 	}

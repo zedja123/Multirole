@@ -40,6 +40,7 @@ enum ReplayFlags
 	REPLAY_DIRECT_SEED     = 0x80,
 	REPLAY_64BIT_DUELFLAG  = 0x100,
 	REPLAY_EXTENDED_HEADER = 0x200,
+	REPLAY_DOMAIN          = 0x400, // MASQPro: YRP decks carry the Deck Master.
 };
 
 struct ReplayHeader
@@ -55,6 +56,9 @@ struct ReplayHeader
 
 constexpr uint32_t HEADER_FLAGS = REPLAY_LUA64 | REPLAY_64BIT_DUELFLAG |
                                   REPLAY_NEWREPLAY | REPLAY_EXTENDED_HEADER;
+
+// MASQPro Domain format duel flag (see MASQPro's ocgcore/ocgapi_constants.h).
+constexpr uint64_t DUEL_DOMAIN = 0x2000000000U;
 
 struct ExtendedReplayHeader
 {
@@ -92,6 +96,9 @@ struct ExtendedReplayHeader
 // 	cards [uint32_t * deckCount]
 // 	extraCount [uint32_t]
 // 	cards [uint32_t * extraCount]
+// 	Only with REPLAY_DOMAIN (MASQPro Domain format):
+// 	masterCount [uint32_t] (0 or 1)
+// 	cards [uint32_t * masterCount]
 // Extra cards:
 // 	count [uint32_t]
 // 	cards [uint32_t * count]
@@ -111,6 +118,7 @@ Replay::Replay(
 	startingDrawCount(info.startingDrawCount),
 	drawCountPerTurn(info.drawCountPerTurn),
 	duelFlags(HostInfo::OrDuelFlags(info.duelFlagsHigh, info.duelFlagsLow)),
+	domain((duelFlags & DUEL_DOMAIN) != 0U),
 	extraCards(extraCards)
 {}
 
@@ -211,6 +219,8 @@ void Replay::Serialize() noexcept
 					8U;   // deckCount<4> + extraCount<4>
 				size += d.second.main.size() * 4U;
 				size += d.second.extra.size() * 4U;
+				if(domain)
+					size += 4U + d.second.master.size() * 4U; // masterCount<4>
 			}
 		}
 		// Size occupied by extra cards.
@@ -255,7 +265,7 @@ void Replay::Serialize() noexcept
 			{
 				REPLAY_YRP1,
 				ENCODED_SERVER_VERSION,
-				HEADER_FLAGS,
+				HEADER_FLAGS | (domain ? REPLAY_DOMAIN : 0U),
 				0U, // NOTE: Zero'd by extended header. Used to be 32bit seed.
 				static_cast<uint32_t>(YRPPastHeaderSize()),
 				0U,
@@ -278,6 +288,8 @@ void Replay::Serialize() noexcept
 			{
 				WriteCodeVector(d.second.main);
 				WriteCodeVector(d.second.extra);
+				if(domain)
+					WriteCodeVector(d.second.master);
 			}
 		}
 		// Extra Cards.
