@@ -8,7 +8,9 @@
 #     reference test vectors, with tools/domain_ref.py;
 #  2. checks the decks written by make_decks.py and compares every verdict
 #     (error type and card code) with the reference implementation;
-#  3. checks a few cases the reference cannot see (Skill and Rush cards).
+#  3. checks a few cases the reference cannot see (Skill and Rush cards);
+#  4. serializes replays with and without the Domain flag and checks the
+#     Deck Master blocks and the sizes of the embedded YRP replay.
 # Needs g++ (C++17), the fmt and sqlite3 libraries, and python3.
 set -eu
 LF=$1
@@ -90,6 +92,23 @@ sed "s|$WORK/||" "$WORK/extra.txt"
 grep -q "skill_in_main.ydk: 0x9 $SKILL" "$WORK/extra.txt" || fail=1
 grep -q "rush_in_main.ydk: 0x12 $RUSH" "$WORK/extra.txt" || fail=1
 grep -q "skill_master.ydk: 0x11 $SKILL" "$WORK/extra.txt" || fail=1
+
+echo "== replays"
+M=$SRC/Multirole/YGOPro
+for c in LzmaEnc LzFind Alloc; do
+	gcc -O1 -D_7ZIP_ST -c -o "$WORK/$c.o" "$M/LZMA/$c.c"
+done
+g++ -std=c++17 -O1 -I"$SRC" -o "$WORK/ReplayTest" "$HERE/ReplayTest.cpp" "$M/Replay.cpp" \
+	"$M/StringUtils.cpp" "$WORK/LzmaEnc.o" "$WORK/LzFind.o" "$WORK/Alloc.o"
+"$WORK/ReplayTest" domain > "$WORK/domain.yrpx"
+"$WORK/ReplayTest" > "$WORK/plain.yrpx"
+python3 -I "$HERE/parse_replay.py" "$WORK/domain.yrpx" > "$WORK/domain.txt" || fail=1
+python3 -I "$HERE/parse_replay.py" "$WORK/plain.yrpx" > "$WORK/plain.txt" || fail=1
+cat "$WORK/domain.txt"
+grep -q "YRP flags 0x730" "$WORK/domain.txt" || fail=1
+grep -q "duelist 0 (1, 2, 3) (4,) (60948488,)" "$WORK/domain.txt" || fail=1
+grep -q "YRP flags 0x330" "$WORK/plain.txt" || fail=1
+grep -q "^OK" "$WORK/plain.txt" || fail=1
 
 if [ "$fail" -eq 0 ]; then echo "ALL OK"; else echo "FAILED"; fi
 exit "$fail"
