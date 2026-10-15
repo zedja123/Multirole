@@ -21,6 +21,7 @@ public:
 		std::string name;
 		CodeVector main;
 		CodeVector extra;
+		CodeVector master; // Domain Deck Master (MASQPro), 0 or 1 codes.
 	};
 
 	Replay(
@@ -46,6 +47,7 @@ private:
 	const uint32_t startingDrawCount;
 	const uint32_t drawCountPerTurn;
 	const uint64_t duelFlags;
+	const bool domain; // Domain format (MASQPro): decks carry the Deck Master.
 	const CodeVector extraCards;
 
 	std::array<std::map<uint8_t, Duelist>, 2U> duelists;

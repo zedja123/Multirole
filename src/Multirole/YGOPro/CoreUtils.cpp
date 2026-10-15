@@ -231,7 +231,9 @@ MsgDistType GetMessageDistributionType(const Msg& msg) noexcept
 		{
 			return MsgDistType::MSG_DIST_TYPE_EVERYONE_EXCEPT_TEAM_DUELIST;
 		}
-		default: /*case 10U: case 201U: case 202U: case 203U:*/
+		// NOTE: Includes the MASQPro Domain hints 204 (HINT_DMZ) and 205
+		// (HINT_DMZ_REMOVE), which every duelist and spectator needs.
+		default: /*case 10U: case 201U: case 202U: case 203U: case 204U: case 205U:*/
 		{
 			return MsgDistType::MSG_DIST_TYPE_EVERYONE;
 		}
