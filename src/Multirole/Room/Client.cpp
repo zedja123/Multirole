@@ -207,6 +207,7 @@ void Client::HandleMsg() noexcept
 		const uint8_t* ptr = incoming.Body();
 		std::vector<uint32_t> main;
 		std::vector<uint32_t> side;
+		uint32_t master = 0U;
 		try
 		{
 			constexpr auto MAX_CARD_COUNT = (YGOPro::CTOSMsg::MSG_MAX_LENGTH -
@@ -226,7 +227,20 @@ void Client::HandleMsg() noexcept
 		{
 			return;
 		}
-		room->Dispatch(Event::UpdateDeck{*this, main, side});
+		// Domain format (MASQPro): optional trailer after the side codes,
+		// [u32 magic "DMZ!"][u32 Deck Master code]. Clients without it send
+		// nothing more, and anything else after the codes is ignored as before.
+		try
+		{
+			constexpr uint32_t DECK_MASTER_TRAILER_MAGIC = 0x215A4D44U;
+			if(incoming.Read<uint32_t>(ptr) == DECK_MASTER_TRAILER_MAGIC)
+				master = incoming.Read<uint32_t>(ptr);
+		}
+		catch(const std::exception&)
+		{
+			master = 0U;
+		}
+		room->Dispatch(Event::UpdateDeck{*this, main, side, master});
 		break;
 	}
 	case YGOPro::CTOSMsg::MsgType::RPS_CHOICE:

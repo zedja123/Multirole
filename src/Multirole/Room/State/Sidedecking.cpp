@@ -79,7 +79,7 @@ StateOpt Context::operator()(State::Sidedecking& s, const Event::UpdateDeck& e) 
 		};
 		// NOTE: Assuming client original deck is always valid here.
 		const auto* ogDeck = e.client.OriginalDeck();
-		auto sideDeck = LoadDeck(e.main, e.side);
+		auto sideDeck = LoadDeck(e.main, e.side, e.master);
 		const auto [oldMonsterLegends, oldSpellLegends, oldTrapLegends] = CountLegends(ogDeck);
 		const auto [newMonsterLegends, newSpellLegends, newTrapLegends] = CountLegends(sideDeck);
 		// Ideally the check should be only newSkills/Legends > 1, but a player
@@ -107,6 +107,10 @@ StateOpt Context::operator()(State::Sidedecking& s, const Event::UpdateDeck& e) 
 		const auto ogMap = ogDeck->GetCodeMap();
 		const auto sideMap = sideDeck->GetCodeMap();
 		if(!std::equal(ogMap.begin(), ogMap.end(), sideMap.begin()))
+			return SidedeckingError();
+		// Domain format: the Deck Master cannot be changed between duels, and
+		// it must be sent again with the sided deck.
+		if(IsDomain() && sideDeck->Master() != ogDeck->Master())
 			return SidedeckingError();
 		e.client.SetCurrentDeck(std::move(sideDeck));
 		s.sidedecked.insert(&e.client);

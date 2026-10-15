@@ -57,6 +57,7 @@ multirole_src_files = files([
 	'src/Multirole/Endpoint/Webhook.cpp',
 	'src/Multirole/Room/Client.cpp',
 	'src/Multirole/Room/Context.cpp',
+	'src/Multirole/Room/DeckCheck.cpp',
 	'src/Multirole/Room/Instance.cpp',
 	'src/Multirole/Room/ScriptLogger.cpp',
 	'src/Multirole/Room/TimerAggregator.cpp',

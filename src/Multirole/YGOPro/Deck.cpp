@@ -7,14 +7,21 @@ Deck::Deck() noexcept :
 	main(),
 	extra(),
 	side(),
-	error(0)
+	error(0),
+	master(0)
 {}
 
 Deck::Deck(CodeVector&& m, CodeVector&& e, CodeVector&& s, uint32_t err)  noexcept:
+	Deck(std::move(m), std::move(e), std::move(s), err, 0U)
+{}
+
+Deck::Deck(CodeVector&& m, CodeVector&& e, CodeVector&& s, uint32_t err,
+           uint32_t master) noexcept :
 	main(std::move(m)),
 	extra(std::move(e)),
 	side(std::move(s)),
-	error(err)
+	error(err),
+	master(master)
 {}
 
 const CodeVector& Deck::Main() const noexcept
@@ -35,6 +42,11 @@ const CodeVector& Deck::Side() const noexcept
 uint32_t Deck::Error() const noexcept
 {
 	return error;
+}
+
+uint32_t Deck::Master() const noexcept
+{
+	return master;
 }
 
 CodeMap Deck::GetCodeMap() const noexcept
